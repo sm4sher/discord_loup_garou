@@ -60,7 +60,7 @@ class StartDialog(ReactDialog):
         try:
             return self.reactions[self.CHOICES[0]]
         except KeyError:
-            return []
+            return 0
 
     async def get_players(self, fetch_answers=True):
         if fetch_answers:
