@@ -14,16 +14,16 @@ class StartDialog(ReactDialog):
     COUNTDOWN_LENGTH = 10
 
     def __init__(self, game_starter, min_players, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs, multivote=True)
         self.game_starter = game_starter
         self.min_players = min_players
 
         self.countdown = None
 
     async def update(self, *args, **kwargs):
-        # for this dialog we always fetch users and we have to do it now
-        await self.fetch_answers(fetch_users=True)
-        if len(self.get_players()) >= self.min_players:
+        # get updated players count
+        await self.fetch_answers()
+        if self.get_players_nb() >= self.min_players:
             if self.countdown is None:
                 self.countdown = self.COUNTDOWN_LENGTH
             else:
@@ -41,7 +41,7 @@ class StartDialog(ReactDialog):
     def get_embed_desc(self):
         return self.EMBED_DESC.format(
             game_starter=self.game_starter.mention,
-            nb_players=len(self.get_players()),
+            nb_players=self.get_players_nb(),
             nb_players_min=self.min_players,
             status=self.get_status())
 
@@ -56,8 +56,13 @@ class StartDialog(ReactDialog):
             return "Début dans {} secondes".format(self.countdown)
         return "Partie lancée"
 
-    def get_players(self):
+    def get_players_nb(self):
         try:
-            return self.voters[self.CHOICES[0]]
+            return self.reactions[self.CHOICES[0]]
         except KeyError:
             return []
+
+    async def get_players(self, fetch_answers=True):
+        if fetch_answers:
+            await self.fetch_answers(fetch_users=True)
+        return [u for u, e in self.voters.items() if e == self.CHOICES[0]]

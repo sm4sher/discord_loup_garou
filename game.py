@@ -49,7 +49,7 @@ class LgGame():
         if not await self.start_dialog.update():
             return
         self.update_start_dialog.stop()
-        self.players = self.start_dialog.get_players()
+        self.players = await self.start_dialog.get_players()
         # if there are too many players just take the first ones
         self.players = self.players[:self.MAX_PLAYERS_NB]
         if self.MIN_PLAYERS_NB <= len(self.players) <= self.MAX_PLAYERS_NB:
