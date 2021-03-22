@@ -125,9 +125,11 @@ class ReactDialog:
         else:
             # easier method to count reactions if we don't need users
             # sub 1 from the count if I reacted (it's possible I haven't yet)
-            self.reactions = [
-                r.count - (1 if r.me else 0) for r in self.msg.reactions if r.emoji in self.get_choices()
-            ]
+            self.reactions = {
+                r.emoji: r.count - (1 if r.me else 0)
+                for r in self.msg.reactions
+                if r.emoji in self.get_choices()
+            }
 
     def format_choices(self):
         choices = self.get_choices()
