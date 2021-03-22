@@ -10,7 +10,7 @@ class StartDialog(ReactDialog):
         '{status}'
     )
     CHOICES = ['🐺']
-    TIME_LIMIT = 30
+    TIME_LIMIT = 500
     COUNTDOWN_LENGTH = 10
 
     def __init__(self, game_starter, min_players, *args, **kwargs):

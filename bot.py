@@ -1,11 +1,12 @@
 from discord.ext.commands import Bot
 from discord.ext import tasks
-from discord import HTTPException
+from discord import HTTPException, Game
 
 from game import LgGame
-from config import api_key 
+import config 
 
 import pickle
+from datetime import datetime
 
 class LgBot(Bot):
     def __init__(self, *args, **kwargs):
@@ -18,6 +19,8 @@ class LgBot(Bot):
             # too lazy to look if there's an event actually representing bot's start
             await self.delete_old_channels()
             self.first_start = False
+        activity = Game("!start pour jouer", start=datetime.now())
+        await self.change_presence(activity=activity)
         print('ready')
 
     async def delete_old_channels(self):
@@ -32,6 +35,7 @@ class LgBot(Bot):
             except:
                 pass
         self.created_chan_ids = []
+        self.save_chan_ids()
 
     def save_chan_ids(self):
         with open('chans.pickle', 'wb+') as f:
@@ -40,6 +44,27 @@ class LgBot(Bot):
     def load_chan_ids(self):
         with open('chans.pickle', 'rb') as f:
             self.created_chan_ids = pickle.load(f)
+
+    async def create_server(self):
+        """ temporary functions to create the 10 servers my bot is allowed to create (could always be useful) """
+        guild = await self.create_guild("Loup Garou", code="Y5dARepxGEs6")
+        chan = await guild.create_text_channel("général")
+        invite = await chan.create_invite()
+        print("Created server. Invite: {}".format(invite.url))
+
+    async def list_servers(self):
+        async for guild in self.fetch_guilds(limit=10):
+            print(guild.name)
+
+    async def make_me_admin(self):
+        # or rather add roles again it's just a temporary function who cares
+        guild_id = "823324105054617670"
+        my_id = "216219209011691521"
+        guild = await self.fetch_guild(guild_id)
+        me = await guild.fetch_member(my_id)
+        roles = [r for r in await guild.fetch_roles() if r.name != "@everyone"]
+        print(roles)
+        await me.add_roles(*roles)
 
 
 
@@ -54,9 +79,11 @@ async def start_game(ctx):
 
 @bot.command(name='invite')
 async def invite(ctx):
-    ctx.send('If you want me to join your server, click this link')
+    await ctx.send(
+        "Pour m'inviter dans votre serveur, cliquez sur ce lien: {}".format(
+            config.invite_url))
 
-bot.run(api_key)
+bot.run(config.bot_token)
 
 """
 misc ideas:
@@ -70,6 +97,7 @@ extra cards maybe, extra games modes idk a lot of possiblities
 - global and per-server stats/leaderboard
 - IIRC bots can use custom emojis from any server so use that (for cards or votes for example)
 - add some sleeps, typing... for suspens! it's all about ambiance
+- allow players to set their gender so messages are personalized for them
 
 not ideas but things to do
 -put max number of players (24?)
@@ -80,4 +108,5 @@ not ideas but things to do
 -use @here to notify groups without creating roles for them (that would kinda kill the game lol)
 -don't allow admins to play... since they can see all channels
 -store all created channels ids somewhere and delete all of them at bot start (and empty the file) OK
+-log chats for some time before deleting channels for moderation purposes
 """

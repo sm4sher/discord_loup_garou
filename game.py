@@ -445,10 +445,10 @@ class LgGame():
     async def end_game(self, how):
         if how == self.VILLAGERS_WIN:
             result = "Tous les loups sont morts! Les villageois peuvent désormais dormir tranquilles... Bravo!"
-            winners = '\n'.join([v.user.mention + '(mort)' if not v.alive else '' for v in self.villagers if not isinstance(v, Wolf)])
+            winners = '\n'.join([v.user.mention + ('(mort)' if not v.alive else '') for v in self.villagers if not isinstance(v, Wolf)])
         elif how == self.WOLVES_WIN:
             result = "Tous les villageois sont morts! Les loups ont gagné... Bravo!"
-            winners = '\n'.join([v.user.mention + '(mort)' if not v.alive else '' for v in self.wolves])
+            winners = '\n'.join([v.user.mention + ('(mort)' if not v.alive else '') for v in self.wolves])
         elif how == self.LOVERS_WIN:
             result = "Tout le monde est mort sauf nos deux amoureux. Ils pourront vivre heureux et avoir beaucoup d'enfants mi-loup mi-humain! Trop mignon <3"
             winners = '\n'.join([v.user.mention for v in self.lovers])
