@@ -8,6 +8,7 @@ from functools import reduce
 import utils
 from react_dialog import ReactDialog
 from start_dialog import StartDialog
+from vote_dialog import VoteDialog
 from villager import Villager
 from wolf import Wolf
 from seer import Seer
@@ -153,6 +154,7 @@ class LgGame():
         self.witch_saved = False
         self.dying = []
         self.process_deaths = False
+        self.mayor = None
         # finally, launch the mayor election then first night
         await self.start_election()
 
@@ -183,6 +185,7 @@ class LgGame():
             return
         winner = self.election_candidates[winner_emo]
         winner.is_mayor = True
+        self.mayor = winner
         await self.main_chan.send("{} a été élu maire. Bravo!".format(
             winner.user.mention))
         await self.next()
@@ -380,7 +383,7 @@ class LgGame():
             "{choices}"
         )
         self.vote_candidates = utils.emoji_dict(self.get_alives())
-        self.vote_dialog = ReactDialog(
+        self.vote_dialog = VoteDialog(
             self.main_chan, self.bot, choices=self.vote_candidates, 
             title="Vote", desc=txt, voters=self.get_alives(user=True))
         await self.vote_dialog.start()
@@ -393,16 +396,17 @@ class LgGame():
         # Vote has ended
         self.update_vote.stop()
         # winner lol that's dark
-        winner_emo = await self.vote_dialog.get_winner()
+        winner_emo, mayor_vote = await self.vote_dialog.get_winner(mayor=self.mayor.user if self.mayor else None)
         if winner_emo is False:
-            # no winner = no mayor
-            await self.main_chan.send("Personne n'a été éliminé...")
-            await self.next()
+            await self.main_chan.send("Égalité... Il faut revoter!")
+            await self.play_vote()
             return
         winner = self.vote_candidates[winner_emo]
         self.kill(winner)
-        await self.main_chan.send("Les villageois ont voté...\n{} a été éliminé!".format(
-            winner.user.mention))
+        reason = "Les villageois ne pouvaient pas se décider mais le maire à tranché" if mayor_vote else "Les villageois ont voté"
+        await self.main_chan.send("{reason}...\n{mention} a été éliminé!".format(
+            reason=reason,
+            mention=winner.user.mention))
         if isinstance(winner, Wolf):
             await self.main_chan.send(
                 "Bonne nouvelle, {} était un méchant loup-garou!".format(
