@@ -75,7 +75,7 @@ class ReactDialog:
         if self.ended:
             # easy way to end it before the time limit
             return True
-        if self.end_early and reduce(lambda x, y: x and y, self.voters, True):
+        if self.end_early and reduce(lambda x, y: x and y, self.voters.values(), True):
             # return True if all voters have voted
             return True
 
@@ -92,8 +92,8 @@ class ReactDialog:
         """ Update dialog
             fetch_answers will refresh the message to get new reacs
             fetch_users will also fetch who answered what """
-        if fetch_answers:
-            self.fetch_answers(fetch_users=fetch_users)
+        if fetch_answers or self.end_early:
+            await self.fetch_answers(fetch_users=fetch_users)
 
         # todo: check if embed changed to avoid useless edits
         embed = self.build_embed()
@@ -108,7 +108,7 @@ class ReactDialog:
         self.reactions = {e: 0 for e in self.get_choices()}
         self.voters = {u: False for u in self.voters}
         # if there's a whitelist or multivotes are not allowed, we need users
-        if fetch_users or self.whitelist or not self.multivote:
+        if fetch_users or self.whitelist or self.end_early or not self.multivote:
             for r in self.msg.reactions:
                 if r.emoji not in self.get_choices():
                     continue
