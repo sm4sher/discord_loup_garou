@@ -74,6 +74,7 @@ class Villager:
             "{} est le nouveau maire. Bravo!".format(
                 choice.user.mention))
         choice.is_mayor = True
+        self.game.mayor = choice
         await self.game.next()
 
     async def send_card(self):
