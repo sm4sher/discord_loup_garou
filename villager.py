@@ -52,11 +52,10 @@ class Villager:
             "{status}\n"
             "{choices}"
         )
-        self.mayor_choices = utils.emoji_dict(
-            [v for v in self.game.villagers if v.alive and v is not self])
+        self.mayor_choices = utils.emoji_dict(self.game.get_alives(exclude=[self]))
         self.mayor_dialog = ReactDialog(
             self.channel, self.game.bot, choices=self.mayor_choices, 
-            title="Maire", desc=txt)
+            title="Maire", desc=txt, voters=[self.user])
         await self.mayor_dialog.start()
         self.update_mayor_dialog.start()
 

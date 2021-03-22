@@ -15,11 +15,10 @@ class Seer(Villager):
             "{status}\n"
             "{choices}"
         )
-        self.choices = utils.emoji_dict(
-            [v for v in self.game.villagers if v.alive and v is not self])
+        self.choices = utils.emoji_dict(self.game.get_alives(exclude=[self]))
         self.dialog = ReactDialog(
             self.channel, self.game.bot, choices=self.choices, 
-            title="Voyante", desc=txt)
+            title="Voyante", desc=txt, voters=[self.user])
         await self.dialog.start()
         self.update_dialog.start()
 

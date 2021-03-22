@@ -17,11 +17,10 @@ class Hunter(Villager):
             "{status}\n"
             "{choices}"
         )
-        self.victims = utils.emoji_dict(
-            [v for v in self.game.villagers if v.alive and v is not self])
+        self.victims = utils.emoji_dict(self.game.get_alives(exclude=[self]))
         self.kill_dialog = ReactDialog(
             self.channel, self.game.bot, choices=self.victims, 
-            title="Tuer", desc=txt)
+            title="Tuer", desc=txt, voters=[self.user])
         await self.kill_dialog.start()
         self.update_kill_dialog.start()
 

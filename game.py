@@ -162,10 +162,10 @@ class LgGame():
             "{status}\n"
             "{choices}"
         )
-        self.election_candidates = utils.emoji_dict(self.villagers)
+        self.election_candidates = utils.emoji_dict(self.get_alives())
         self.election_dialog = ReactDialog(
             self.main_chan, self.bot, choices=self.election_candidates, 
-            title="Élection", desc=txt)
+            title="Élection", desc=txt, voters=self.get_alives(user=True))
         await self.election_dialog.start()
         self.update_election.start()
 
@@ -308,11 +308,10 @@ class LgGame():
             "{status}\n"
             "{choices}"
         )
-        self.wolves_preys = utils.emoji_dict(
-            [v for v in self.villagers if v.alive and not isinstance(v, Wolf)])
+        self.wolves_preys = utils.emoji_dict(self.get_alives(exclude=self.wolves))
         self.wolves_dialog = ReactDialog(
-            self.wolves_chan, self.bot, choices=self.wolves_preys, 
-            title="Chasse", desc=txt)
+            self.wolves_chan, self.bot, choices=self.wolves_preys, title="Chasse",
+            desc=txt, voters=self.get_alives(l=self.wolves, user=True))
         await self.wolves_dialog.start()
         self.update_wolves_dialog.start()
 
@@ -380,11 +379,10 @@ class LgGame():
             "{status}\n"
             "{choices}"
         )
-        self.vote_candidates = utils.emoji_dict(
-            [v for v in self.villagers if v.alive])
+        self.vote_candidates = utils.emoji_dict(self.get_alives())
         self.vote_dialog = ReactDialog(
             self.main_chan, self.bot, choices=self.vote_candidates, 
-            title="Vote", desc=txt)
+            title="Vote", desc=txt, voters=self.get_alives(user=True))
         await self.vote_dialog.start()
         self.update_vote.start()
 
@@ -460,3 +458,12 @@ class LgGame():
         await self.main_chan.send(embed=embed)
 
         # todo: delete channels after a period of time.
+
+    def get_alives(self, l=None, exclude=[], user=False):
+        """ Returns list of alive Villagers
+            l allow to change the base list from self.villagers
+            exclude is a list of Villagers to exclude
+            user returns User associated with Villager"""
+        if l is None:
+            l = self.villagers
+        return [v.user if user else v for v in l if v.alive and v not in exclude]

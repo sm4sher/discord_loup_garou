@@ -52,7 +52,7 @@ class Witch(Villager):
         ).format(victim=victim, actions=actions)
         self.decision_dialog = ReactDialog(
             self.channel, self.game.bot, choices=choices, 
-            title="Sorcière", desc=txt)
+            title="Sorcière", desc=txt, voters=[self.user])
         await self.decision_dialog.start()
         self.update_decision_dialog.start()
 
@@ -79,11 +79,10 @@ class Witch(Villager):
             "{status}\n"
             "{choices}"
         )
-        self.victims = utils.emoji_dict(
-            [v for v in self.game.villagers if v.alive and v is not self])
+        self.victims = utils.emoji_dict(self.game.get_alives(exclude=[self]))
         self.kill_dialog = ReactDialog(
             self.channel, self.game.bot, choices=self.victims, 
-            title="Empoisonner", desc=txt)
+            title="Empoisonner", desc=txt, voters=[self.user])
         await self.kill_dialog.start()
         self.update_kill_dialog.start()
 
