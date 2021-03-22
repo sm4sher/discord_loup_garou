@@ -1,12 +1,11 @@
 from discord import Embed
 
 from datetime import datetime
+from functools import reduce
 
 import utils
 
 # todo: add optional @here mention
-# todo: end early if all voters are done
-# todo: prevent multi votes
 class ReactDialog:
     """ Dialog allowing users to react within a given time 
         choices must be either a list of emoji or a dict {emoji: label}"""
@@ -16,7 +15,7 @@ class ReactDialog:
     TIME_LIMIT = 10
 
     def __init__(self, channel, bot, choices=None, title=None, desc=None,
-            time_limit=None, voters=None):
+            time_limit=None, voters=None, multivote=False, end_early=True):
         self.channel = channel
         self.bot = bot
         self.choices = choices
@@ -24,9 +23,17 @@ class ReactDialog:
         self.desc = desc
         self.time_limit = time_limit
         self.voters = voters
+        self.multivote = multivote
 
         self.reactions = {}
-        self.users = {}
+        if self.voters is not None:
+            self.whitelist = True
+            self.voters = {u: False for u in self.voters}
+        else:
+            self.whitelist = False
+            self.voters = {}
+        # we can't end early if we don't know the voters
+        self.end_early = end_early and self.whitelist
         self.ended = False
 
     def get_embed_title(self):
@@ -65,10 +72,12 @@ class ReactDialog:
         return self.TIME_LIMIT
 
     def is_ended(self):
-        # easy way to end it before the time limit
         if self.ended:
+            # easy way to end it before the time limit
             return True
-        #if self.voters is not None:
+        if self.end_early and reduce(lambda x, y: x and y, self.voters, True):
+            # return True if all voters have voted
+            return True
 
         self.ended = self.get_remaining_seconds() <= 0
         return self.ended
@@ -101,10 +110,22 @@ class ReactDialog:
                 continue
             # don't count mine but it's possible I haven't reacted yet
             self.reactions[r.emoji] = r.count - (1 if r.me else 0) 
-            if fetch_users:
-                self.users[r.emoji] = [
-                u async for u in r.users() if u.id != self.bot.user.id
-            ]
+            # reset voters bc they could have removed their vote
+            self.voters = {u: False for u in self.voters.keys()}
+            # if there's a whitelist or multivotes are not allowed, we need users
+            if fetch_users or self.whitelist or not self.multivote:
+                async for u in r.users():
+                    if u.id == self.bot.user.id:
+                        continue # it me lel
+                    if self.whitelist and u not in self.voters.keys():
+                        # not allowed to vote -> we also need to sub from the count
+                        self.reactions[r.emoji] -= 1
+                        continue
+                    if not self.multivote and self.voters[u]:
+                        # omg they voted mutiple time that's not nice :(
+                        self.reactions[r.emoji] -= 1 # same old shit
+                        continue
+                    self.voters[u] = r.emoji
 
     def format_choices(self):
         choices = self.get_choices()

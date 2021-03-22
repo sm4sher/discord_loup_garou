@@ -58,6 +58,6 @@ class StartDialog(ReactDialog):
 
     def get_players(self):
         try:
-            return self.users[self.CHOICES[0]]
+            return self.voters[self.CHOICES[0]]
         except KeyError:
             return []
