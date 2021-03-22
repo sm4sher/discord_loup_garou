@@ -104,28 +104,30 @@ class ReactDialog:
     async def fetch_answers(self, fetch_users=False):
         # refetch message to get new reactions
         self.msg = await self.channel.fetch_message(self.msg.id)
-        # Update answers
-        for r in self.msg.reactions:
-            if r.emoji not in self.get_choices():
-                continue
-            # don't count mine but it's possible I haven't reacted yet
-            self.reactions[r.emoji] = r.count - (1 if r.me else 0) 
-            # reset voters bc they could have removed their vote
-            self.voters = {u: False for u in self.voters.keys()}
-            # if there's a whitelist or multivotes are not allowed, we need users
-            if fetch_users or self.whitelist or not self.multivote:
+        # reset reacs & voters bc they could have removed their vote
+        self.reactions = {e: 0 for e in self.get_choices()}
+        self.voters = {u: False for u in self.voters}
+        # if there's a whitelist or multivotes are not allowed, we need users
+        if fetch_users or self.whitelist or not self.multivote:
+            for r in self.msg.reactions:
+                if r.emoji not in self.get_choices():
+                    continue
                 async for u in r.users():
                     if u.id == self.bot.user.id:
                         continue # it me lel
-                    if self.whitelist and u not in self.voters.keys():
-                        # not allowed to vote -> we also need to sub from the count
-                        self.reactions[r.emoji] -= 1
-                        continue
-                    if not self.multivote and self.voters[u]:
+                    if self.whitelist and u not in self.voters:
+                        continue # not allowed to vote
+                    if not self.multivote and self.voters.get(u):
                         # omg they voted mutiple time that's not nice :(
-                        self.reactions[r.emoji] -= 1 # same old shit
                         continue
+                    self.reactions[r.emoji] += 1
                     self.voters[u] = r.emoji
+        else:
+            # easier method to count reactions if we don't need users
+            # sub 1 from the count if I reacted (it's possible I haven't yet)
+            self.reactions = [
+                r.count - (1 if r.me else 0) for r in self.msg.reactions if r.emoji in self.get_choices()
+            ]
 
     def format_choices(self):
         choices = self.get_choices()
