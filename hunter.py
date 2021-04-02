@@ -9,6 +9,10 @@ class Hunter(Villager):
     ROLE_NAME = "Chasseur 🔫"
 
     async def hunter_death(self):
+        self.victims = utils.emoji_dict(self.game.get_alives(exclude=[self]))
+        if not self.victims:
+            await self.game.next()
+            return
         self.game.main_chan.send(
             "{} est un chasseur! Il ne va pas mourir sans se battre!.".format(
                 self.user.mention))
@@ -17,7 +21,6 @@ class Hunter(Villager):
             "{status}\n"
             "{choices}"
         )
-        self.victims = utils.emoji_dict(self.game.get_alives(exclude=[self]))
         self.kill_dialog = ReactDialog(
             self.channel, self.game.bot, choices=self.victims, 
             title="Tuer", desc=txt, voters=[self.user])

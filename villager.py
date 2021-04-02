@@ -44,6 +44,10 @@ class Villager:
         if not self.is_mayor:
             await self.game.next()
             return
+        self.mayor_choices = utils.emoji_dict(self.game.get_alives(exclude=[self]))
+        if not self.mayor_choices:
+            await self.game.next()
+            return
         await self.game.main_chan.send(
             "{} est maire. Avant de rendre son dernier souffle, il désigne son successeur.".format(
                 self.user.mention))
@@ -52,7 +56,6 @@ class Villager:
             "{status}\n"
             "{choices}"
         )
-        self.mayor_choices = utils.emoji_dict(self.game.get_alives(exclude=[self]))
         self.mayor_dialog = ReactDialog(
             self.channel, self.game.bot, choices=self.mayor_choices, 
             title="Maire", desc=txt, voters=[self.user])

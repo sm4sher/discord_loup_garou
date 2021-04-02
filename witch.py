@@ -33,7 +33,7 @@ class Witch(Villager):
         return s, choices
 
     async def play(self):
-        if not self.life_power and not self.death_power:
+        if (not self.life_power or not self.game.wolves_victim) and not self.death_power:
             # Can't do anything
             await self.game.next()
             return

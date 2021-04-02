@@ -326,13 +326,16 @@ class LgGame():
         await self.next()
 
     async def play_wolves(self):
+        self.wolves_preys = utils.emoji_dict(self.get_alives(exclude=self.wolves))
+        if not self.wolves_preys:
+            await self.next()
+            return
         await self.main_chan.send("Les loups garous se réveillent :o")
         txt = (
             "Qui voulez vous dévorer cette nuit?\n"
             "{status}\n"
             "{choices}"
         )
-        self.wolves_preys = utils.emoji_dict(self.get_alives(exclude=self.wolves))
         self.wolves_dialog = ReactDialog(
             self.wolves_chan, self.bot, choices=self.wolves_preys, title="Chasse",
             desc=txt, voters=self.get_alives(l=self.wolves, user=True))
@@ -390,7 +393,7 @@ class LgGame():
                     self.witch_victim.user.mention))
         else:
             await self.main_chan.send(
-                "Malheureusement, {} était un pauvre {} :'(".format(
+                "Malheureusement, {} était un(e) pauvre {} :'(".format(
                     self.witch_victim.user.mention,
                     self.witch_victim.ROLE_NAME))
         self.process_deaths = True
@@ -398,12 +401,15 @@ class LgGame():
         await self.next()
 
     async def play_vote(self):
+        self.vote_candidates = utils.emoji_dict(self.get_alives())
+        if len(self.vote_candidates) < 2:
+            await self.next()
+            return
         txt = (
             "Il est temps de voter. Qui voulez-vous éliminer aujourd'hui?\n"
             "{status}\n"
             "{choices}"
         )
-        self.vote_candidates = utils.emoji_dict(self.get_alives())
         self.vote_dialog = VoteDialog(
             self.main_chan, self.bot, choices=self.vote_candidates, 
             title="Vote", desc=txt, voters=self.get_alives(user=True))

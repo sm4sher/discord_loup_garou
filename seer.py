@@ -9,13 +9,16 @@ class Seer(Villager):
     ROLE_NAME = "Voyante 🔮"
     
     async def play(self):
+        self.choices = utils.emoji_dict(self.game.get_alives(exclude=[self]))
+        if not self.choices:
+            await self.game.next()
+            return
         await self.game.main_chan.send("La Voyante se réveille!")
         txt = (
             "De quel joueur voulez-vous sonder la véritable personnalité?\n"
             "{status}\n"
             "{choices}"
         )
-        self.choices = utils.emoji_dict(self.game.get_alives(exclude=[self]))
         self.dialog = ReactDialog(
             self.channel, self.game.bot, choices=self.choices, 
             title="Voyante", desc=txt, voters=[self.user])
