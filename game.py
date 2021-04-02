@@ -4,6 +4,7 @@ from discord import HTTPException, Embed, PermissionOverwrite
 import logging
 import random
 from functools import reduce
+from asyncio import sleep
 
 import utils
 from react_dialog import ReactDialog
@@ -359,6 +360,7 @@ class LgGame():
     async def play_wolves_death(self):
         # don't send everything at once for more suspens :)
         await self.main_chan.send("Le village se réveille!")
+        await self.add_suspens()
         if self.wolves_victim is None:
             await self.main_chan.send("Bonne nouvelle, les loups n'ont fait aucune victime cette nuit!")
             await self.next()
@@ -366,6 +368,7 @@ class LgGame():
         await self.main_chan.send(
             "Cette nuit, {} a été dévoré par les loups :(".format(
                 self.wolves_victim.user.mention))
+        await self.add_suspens()
         if self.witch_saved:
             await self.main_chan.send(
                 "Heureusement, la sorcière l'a ressuscité!")
@@ -383,10 +386,13 @@ class LgGame():
         if self.witch_victim is None:
             await self.next()
             return
+        await self.add_suspens()
         await self.main_chan.send("Mais ce n'est pas tout...")
+        await self.add_suspens(None, 2)
         await self.main_chan.send(
             "{} a été empoisonné par la sorcière.".format(
                 self.witch_victim.user.mention))
+        await self.add_suspens()
         if isinstance(self.witch_victim, Wolf):
             await self.main_chan.send(
                 "Vous pouvez remercier la sorcière car {} était un méchant loup-garou!".format(
@@ -402,9 +408,9 @@ class LgGame():
 
     async def play_vote(self):
         self.vote_candidates = utils.emoji_dict(self.get_alives())
-        if len(self.vote_candidates) < 2:
-            await self.next()
-            return
+        if len(self.vote_candidates) < 2: # but 2 candidates will always vote for each other?
+            await self.next() # so if we have 1 wolf and 1 villager idk?
+            return # the rules might be that wolves win if there's only 1 v remaining
         txt = (
             "Il est temps de voter. Qui voulez-vous éliminer aujourd'hui?\n"
             "{status}\n"
@@ -508,3 +514,9 @@ class LgGame():
             There's certainly a better way to do this but this will do for now
             Also this assumes it's an async func?"""
         await func(*args, **kwargs)
+
+    async def add_suspens(self, channel=None, time=5):
+        if not channel:
+            channel = self.main_chan
+        async with channel.typing():
+            await sleep(time)

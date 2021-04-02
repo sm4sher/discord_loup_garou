@@ -12,7 +12,7 @@ class ReactDialog:
     EMBED_TITLE = "Vote"
     EMBED_DESC = "Vous pouvez voter maintenant.\n{status}\n{choices}"
     CHOICES = {'✔️': "Oui", '❌': "Non"}
-    TIME_LIMIT = 10
+    TIME_LIMIT = 60
 
     def __init__(self, channel, bot, choices=None, title=None, desc=None,
             time_limit=None, voters=None, multivote=False, end_early=True):
