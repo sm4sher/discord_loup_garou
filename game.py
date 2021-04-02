@@ -110,7 +110,7 @@ class LgGame():
                 self.thief = Thief(p, self)
                 self.villagers.append(self.thief)
 
-    async def create_chan(self, name, users, category=False):
+    async def create_chan(self, name, users, category=False, voice=False):
         ow = {
             self.initial_ctx.guild.default_role: PermissionOverwrite(read_messages=False),
             **{u: PermissionOverwrite(read_messages=True) for u in users}
@@ -118,12 +118,28 @@ class LgGame():
         if category:
             chan = await self.initial_ctx.guild.create_category(
                 name, overwrites=ow)
+        elif voice:
+            chan = await self.initial_ctx.guild.create_voice_channel(
+                name, category=self.ctg, overwrites=ow)
         else:
             chan = await self.initial_ctx.guild.create_text_channel(
                 name, category=self.ctg, overwrites=ow)
         self.bot.created_chan_ids.append(chan.id)
         self.bot.save_chan_ids()
         return chan
+
+    @tasks.loop(seconds=30, count=2)
+    async def delete_chans(self):
+        if self.delete_chans.current_loop < 1:
+            return # First iteration starts immediately, we want to wait
+        await self.main_chan.delete()
+        await self.voice_chan.delete()
+        await self.wolves_chan.delete()
+        if self.lovers_chan:
+            await self.lovers_chan.delete()
+        for v in self.villagers:
+            await v.channel.delete()
+        await self.ctg.delete()
 
     async def init_game(self):
         """Initialize game model, create needed channels..."""
@@ -137,8 +153,13 @@ class LgGame():
         self.main_chan = await self.create_chan(
             "Place de Thiercelieu", [v.user for v in self.villagers])
 
+        self.voice_chan = await self.create_chan(
+            "Vocal", [v.user for v in self.villagers], voice=True)
+
         self.wolves_chan = await self.create_chan(
             "Loups", [w.user for w in self.wolves])
+
+        self.lovers_chan = None
 
         # Create private chans for everyone.
         for v in self.villagers:
@@ -399,7 +420,8 @@ class LgGame():
         winner_emo, mayor_vote = await self.vote_dialog.get_winner(mayor=self.mayor.user if self.mayor else None)
         if winner_emo is False:
             await self.main_chan.send("Égalité... Il faut revoter!")
-            await self.play_vote()
+            # can't just call self.play_vote because it would try to start the update task b4 this one returns
+            self.thread_breaker.start(self.play_vote)
             return
         winner = self.vote_candidates[winner_emo]
         self.kill(winner)
@@ -462,6 +484,7 @@ class LgGame():
         await self.main_chan.send(embed=embed)
 
         # todo: delete channels after a period of time.
+        self.delete_chans.start()
 
     def get_alives(self, l=None, exclude=[], user=False):
         """ Returns list of alive Villagers
@@ -471,3 +494,11 @@ class LgGame():
         if l is None:
             l = self.villagers
         return [v.user if user else v for v in l if v.alive and v not in exclude]
+
+    @tasks.loop(seconds=0, count=1)
+    async def thread_breaker(self, func, *args, **kwargs):
+        """ Used to call a function without awaiting it in the current thread
+            Useful when we need to restart a task from itself
+            There's certainly a better way to do this but this will do for now
+            Also this assumes it's an async func?"""
+        await func(*args, **kwargs)

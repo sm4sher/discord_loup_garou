@@ -10,12 +10,14 @@ class VoteDialog(ReactDialog):
         emojis = {e: 0 for e in self.choices}
         may_emo = None
         for u, e in self.voters.items():
+            if not e:
+                continue
             if u is mayor:
                 emojis[e] += 2
                 may_emo = e
             else:
                 emojis[e] += 1
-        winners = [e for e, count in emojis.items() if count == emojis[max(emojis, key=emojis.get)]]
+        winners = [e for e, count in emojis.items() if count > 0 and count == emojis[max(emojis, key=emojis.get)]]
         print(winners)
         if not winners:
             return False, False
