@@ -129,7 +129,7 @@ class LgGame():
         self.bot.save_chan_ids()
         return chan
 
-    @tasks.loop(seconds=30, count=2)
+    @tasks.loop(seconds=300, count=2)
     async def delete_chans(self):
         if self.delete_chans.current_loop < 1:
             return # First iteration starts immediately, we want to wait
@@ -465,8 +465,8 @@ class LgGame():
             return
         # if every non-lover is dead and both lovers are alive
         if (self.lovers and len(self.lovers) == 2
-          and reduce(lambda x, y: x and (not y.alive or y.lover is not None), True) 
-          and reduce(lambda x, y: x and y.alive, self.lovers), True):
+          and reduce(lambda x, y: x and (not y.alive or y.lover is not None), self.lovers, True)
+          and reduce(lambda x, y: x and y.alive, self.lovers, True)):
             await self.end_game(self.LOVERS_WIN)
             return
 
